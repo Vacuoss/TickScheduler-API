@@ -1,6 +1,6 @@
 ## TickScheduler API  
 ## Work on Forge 1.20.1
-## TickScheduler is a small and reliable utility library for mods that need to:
+## TickScheduler is an utility library for mods that need to:
 
 - run code in the future  
 - repeat actions every N ticks  
