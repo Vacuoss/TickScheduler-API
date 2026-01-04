@@ -1,15 +1,27 @@
 ## TickScheduler API  
 ## Works on Forge 1.20.1
-## TickScheduler is an utility library for mods that need to:
-
-- run code in the future  
-- repeat actions every N ticks  
-- execute logic when conditions become true  
-- persist tasks across world reloads  
-- offload heavy work to async threads 
+## TickScheduler is a lightweight scheduling library for Minecraft mods that need to run logic over time, repeat actions, wait for conditions, or persist timers across world reloads
 
 ## Features:
+Run code after a delay
 
+Repeat code every N ticks
+
+Run logic when a condition becomes true
+
+Run tasks in priority order
+
+Group and cancel tasks
+
+Run async work safely
+
+Persist tasks in world data
+
+Attach NBT data to tasks
+
+Profile execution cost
+
+#Basic usage
 • Run code after a delay
 
 Execute any task after a specified number of ticks:
@@ -27,99 +39,82 @@ SchedulerAPI.repeat(20, 20, 5, ctx -> {
     System.out.println("Repeating at tick: " + ctx.tick);
 });
 ```
-
-• Task priorities
-
-When multiple tasks trigger on the same tick, they run in priority order:
-
-◽HIGH
-
-◽NORMAL
-
-◽LOW
+• Priority
 ```java
 SchedulerAPI.builder()
     .delay(40)
     .priority(Types.Priority.HIGH)
     .submit(ctx -> System.out.println("High priority task"));
 ```
-•Cancel tasks or whole task groups
-
-Useful for cooldowns or stopping chain reactions
+#Canceling tasks
+• Cancel a single task
 ```java
-Types.Handle h = SchedulerAPI.after(200, ctx -> {...});
-h.cancel(); // cancels the task
+Types.Handle h = SchedulerAPI.after(200, ctx -> { });
+h.cancel();
 ```
+• Cancel a group
 ```java
 var group = SchedulerAPI.group("cooldowns");
 SchedulerAPI.builder().group(group).submit(...);
-
-// Cancel all tasks in the group:
+// cancel everything in the group
 group.cancelAll();
 ```
-•Async task execution
+• Async execution
 ```java
 SchedulerAPI.runAsync(() -> {
-    // heavy calculations
 });
 ```
-•Condition-based scheduler:
-
-Run a task only when a condition becomes true, with optional timeout and repeated checks:
+• Condition-based scheduling
+Run code only when a condition becomes true:
 ```java
-SchedulerAPI.runAsync(() -> {
-    // heavy calculations
-});
+SchedulerAPI.when(() -> someValue > 10)
+    .checkEvery(5)
+    .onSuccess(ctx -> System.out.println("Condition met"))
+    .timeout(200)
+    .onTimeout(ctx -> System.out.println("Timeout"))
+    .start();
 ```
-•Built-in profiler
-
-Measure execution cost of scheduled tasks:
-```java|
-SchedulerAPI.enableProfiler(true);
-var stats = SchedulerAPI.getProfilerStats();
-System.out.println("Avg: " + stats.getAvgMillisPerTask() + " ms");
-```
-Profiler tracks:
-
-total executed tasks
-
-average time
-
-max time
-
-tick range
-•/commands:
-- /scheduler debug
-- /scheduler profiler on
-- /scheduler profiler off
-- /scheduler profiler stats
-- /scheduler save
-- /scheduler load
-- /scheduler tasks
-- /scheduler test
-
-## TickScheduler is ideal for:
-- temporary effects
-- cooldown timers
-- delayed events
-- AI / structure updates
-- repeating logic loops
-- async computations
-- persistent timers
-- condition-based triggers
-- modular systems that need precise timing
-  
-## • API classes:
-
+• Persistent tasks
+Tasks can be saved in world data and restored on load
 ```java
-SchedulerAPI - High-level scheduling interface
-TickScheduler - Internal engine
-Types - Task types, context, builder, priorities
-PersistentStorage - Save & load persistent tasks ConditionScheduler
-ConditionScheduler - Condition-based logic
-TaskRegistry - Restore persistent task types
+CompoundTag data = new CompoundTag();
+data.putUUID("player", player.getUUID());
+
+SchedulerAPI.builder()
+    .delay(200)
+    .persistent()
+    .type("cooldown")
+    .data(data)
+    .submit(ctx -> {
+        var p = ctx.server.getPlayerList().getPlayer(ctx.data().getUUID("player"));
+        if (p != null) p.sendSystemMessage(Component.literal("Cooldown finished"));
+    });
 ```
-•Example: Building a custom scheduler task:
+##Commands:
+```java
+CompoundTag data = new CompoundTag();
+data.putUUID("player", player.getUUID());
+
+SchedulerAPI.builder()
+    .delay(200)
+    .persistent()
+    .type("cooldown")
+    .data(data)
+    .submit(ctx -> {
+        var p = ctx.server.getPlayerList().getPlayer(ctx.data().getUUID("player"));
+        if (p != null) p.sendSystemMessage(Component.literal("Cooldown finished"));
+    });
+```
+##API overview
+```java
+SchedulerAPI     - Main user API
+TickScheduler    - Internal engine
+Types            - Task, Context, Builder, Priority
+ConditionScheduler - Condition-based tasks
+PersistentStorage - JSON snapshots
+TaskRegistry     - Persistent task handlers
+```
+• Example:
 ```java
 SchedulerAPI.builder()
     .delay(60)
@@ -129,7 +124,7 @@ SchedulerAPI.builder()
     .persistent()
     .type("regenerate")
     .submit(ctx -> {
-        System.out.println("Regenerating at " + ctx.tick);
+        System.out.println("Regenerating at tick " + ctx.tick);
     });
 ```
 
