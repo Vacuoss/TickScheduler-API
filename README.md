@@ -21,7 +21,7 @@ Attach NBT data to tasks
 
 Profile execution cost
 
-#Basic usage
+## Basic usage
 • Run code after a delay
 
 Execute any task after a specified number of ticks:
@@ -46,7 +46,7 @@ SchedulerAPI.builder()
     .priority(Types.Priority.HIGH)
     .submit(ctx -> System.out.println("High priority task"));
 ```
-#Canceling tasks
+## Canceling tasks
 • Cancel a single task
 ```java
 Types.Handle h = SchedulerAPI.after(200, ctx -> { });
@@ -90,7 +90,7 @@ SchedulerAPI.builder()
         if (p != null) p.sendSystemMessage(Component.literal("Cooldown finished"));
     });
 ```
-##Commands:
+## Commands:
 ```java
 CompoundTag data = new CompoundTag();
 data.putUUID("player", player.getUUID());
@@ -105,7 +105,7 @@ SchedulerAPI.builder()
         if (p != null) p.sendSystemMessage(Component.literal("Cooldown finished"));
     });
 ```
-##API overview
+## API overview
 ```java
 SchedulerAPI     - Main user API
 TickScheduler    - Internal engine
