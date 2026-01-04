@@ -101,9 +101,7 @@ SchedulerAPI.builder()
 
 /scheduler test <- for testing library
 
-/scheduler profiler stats
-
-Show: 
+/scheduler profiler stats Show: 
 
 executed tasks
 
