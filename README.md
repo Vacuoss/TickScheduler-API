@@ -91,6 +91,28 @@ SchedulerAPI.builder()
     });
 ```
 ## Commands:
+/scheduler debug
+
+/scheduler save
+
+/scheduler load
+
+/scheduler tasks
+
+/scheduler test <- for testing library
+
+/scheduler profiler stats
+
+Show: 
+
+executed tasks
+
+average time per task
+
+max execution time
+
+tick range
+
 ```java
 CompoundTag data = new CompoundTag();
 data.putUUID("player", player.getUUID());
