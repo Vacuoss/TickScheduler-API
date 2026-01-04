@@ -1,7 +1,9 @@
 package com.avacuoss.TickScheduler;
 
-import net.minecraft.server.level.ServerPlayer;
-import java.nio.file.Path;
+import com.avacuoss.TickScheduler.api.SchedulerAPI;
+import com.avacuoss.TickScheduler.Ticks.TickScheduler;
+import com.avacuoss.TickScheduler.Types.Types;
+import com.avacuoss.TickScheduler.Storage.PersistentTaskRegistry;
 
 public class TickSchedulerTest {
 
@@ -11,7 +13,7 @@ public class TickSchedulerTest {
         if (started) return;
         started = true;
 
-        System.out.println("========= TickScheduler TESTS START =========");
+        System.out.println("TickScheduler TESTS START");
 
         testDelay();
         testRepeat();
@@ -20,29 +22,35 @@ public class TickSchedulerTest {
         testAsync();
         testProfiler();
         testCondition();
-        testPersistentSnapshot();
+        testPersistent();
 
-        System.out.println("========= TickScheduler TESTS RUNNING =======");
+        System.out.println("TickScheduler TESTS RUNNING");
     }
 
+    //delay test
     private static void testDelay() {
+        long start = TickScheduler.getTickStatic();
         SchedulerAPI.after(40, ctx ->
-                System.out.println("[TEST] DELAY PASS (tick=" + ctx.tick + ")"));
+                System.out.println("[TEST] DELAY " + (ctx.tick - start == 40)));
     }
 
+    //repeat test
     private static void testRepeat() {
         SchedulerAPI.repeat(20, 20, 3, ctx ->
-                System.out.println("[TEST] REPEAT PASS (tick=" + ctx.tick + ")"));
+                System.out.println("[TEST] REPEAT tick=" + ctx.tick));
     }
 
+    //cancel test
     private static void testCancel() {
         Types.Handle h = SchedulerAPI.after(200, ctx ->
-                System.out.println("[TEST] CANCEL FAIL — should not run"));
+                System.err.println("[TEST] CANCEL FAILED")
+        );
 
         SchedulerAPI.after(5, ctx ->
-                System.out.println("[TEST] CANCEL PASS=" + h.cancel()));
+                System.out.println("[TEST] CANCEL " + h.cancel()));
     }
 
+    //priority test
     private static void testPriority() {
         SchedulerAPI.builder().delay(40).priority(Types.Priority.LOW)
                 .submit(ctx -> System.out.println("[TEST] PRIORITY LOW"));
@@ -51,68 +59,49 @@ public class TickSchedulerTest {
                 .submit(ctx -> System.out.println("[TEST] PRIORITY HIGH"));
     }
 
-    // ASYNC TEST
+    //async test
     private static void testAsync() {
         SchedulerAPI.runAsync(() ->
-                System.out.println("[TEST] ASYNC PASS (thread=" + Thread.currentThread().getName() + ")"));
+                System.out.println("[TEST] ASYNC thread=" + Thread.currentThread().getName()));
     }
 
-    // PROFILER TEST
+    //profiler test
     private static void testProfiler() {
         SchedulerAPI.enableProfiler(true);
 
-        SchedulerAPI.repeat(1, 1, 10, ctx -> {
-            double dummy = Math.sqrt(Math.random() * 1000);
-        });
+        SchedulerAPI.repeat(1, 1, 10, ctx -> Math.sqrt(Math.random() * 1000));
 
         SchedulerAPI.after(15, ctx -> {
             SchedulerAPI.enableProfiler(false);
             Types.ProfilerStats s = SchedulerAPI.getProfilerStats();
-            System.out.println("[TEST] PROFILER stats: tasks=" + s.tasksExecuted +
-                    " avg=" + s.getAvgMillisPerTask() + "ms max=" + s.getMaxMillis() + "ms");
+            System.out.println("[TEST] PROFILER tasks=" + s.tasksExecuted +
+                    " avg=" + s.getAvgMillisPerTask() +
+                    " max=" + s.getMaxMillis());
         });
     }
 
-    // CONDITION SCHEDULER
+    //condition test
     private static void testCondition() {
         SchedulerAPI.when(() -> TickScheduler.getTickStatic() > 120)
                 .checkEvery(10)
                 .onSuccess(ctx ->
-                        System.out.println("[TEST] CONDITION PASS (tick=" + ctx.tick + ")"))
+                        System.out.println("[TEST] CONDITION PASS tick=" + ctx.tick))
                 .timeout(200)
                 .onTimeout(ctx ->
-                        System.out.println("[TEST] CONDITION FAIL — timeout"))
+                        System.err.println("[TEST] CONDITION TIMEOUT"))
                 .start();
     }
 
-    // PERSISTENT SNAPSHOT + TYPE RESTORE
-    private static void testPersistentSnapshot() {
-
-        PersistentStorage.TaskRegistry.register("hello", ctx ->
-                System.out.println("[TEST] RESTORE TYPE PASS (tick=" + ctx.tick + ")"));
+    //persistent saveddata test
+    private static void testPersistent() {
+        PersistentTaskRegistry.register("hello", (ctx, data) ->
+                System.out.println("[TEST] RESTORED tick=" + ctx.tick));
 
         SchedulerAPI.builder()
                 .delay(50)
-                .repeat(0)
                 .persistent()
                 .type("hello")
                 .submit(ctx ->
-                        System.out.println("[TEST] ORIGINAL TYPE PASS (tick=" + ctx.tick + ")"));
-
-
-        Path file = Path.of("scheduler_test_snapshot.json");
-        SchedulerAPI.after(5, ctx -> {
-            try {
-                PersistentStorage.save(file);
-                System.out.println("[TEST] SNAPSHOT SAVED");
-            } catch (Exception e) { e.printStackTrace(); }
-        });
-
-        SchedulerAPI.after(10, ctx -> {
-            try {
-                System.out.println("[TEST] SNAPSHOT LOADING...");
-                PersistentStorage.load(file);
-            } catch (Exception e) { e.printStackTrace(); }
-        });
+                        System.out.println("[TEST] ORIGINAL tick=" + ctx.tick));
     }
 }
